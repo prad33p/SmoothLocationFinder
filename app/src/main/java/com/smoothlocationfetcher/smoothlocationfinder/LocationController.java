@@ -10,18 +10,18 @@ import android.support.annotation.Nullable;
 public class LocationController {
 
     private LocationParams params;
-    private GooglePlayServicesLocationProvider locationProvider;
+    private LocationConnection locationConnection;
     private boolean oneFix;
 
-    public LocationController(Context context, GooglePlayServicesLocationProvider locationProvider) {
+    public LocationController(Context context, LocationConnection locationConnection) {
         params = LocationParams.BEST_EFFORT;
         oneFix = false;
-        this.locationProvider = locationProvider;
+        this.locationConnection = locationConnection;
 
-        if (locationProvider == null) {
+        if (locationConnection == null) {
             throw new RuntimeException("A provider must be initialized");
         } else {
-            locationProvider.init(context);
+            locationConnection.init(context);
         }
     }
 
@@ -42,7 +42,7 @@ public class LocationController {
 
     @Nullable
     public Location getLastLocation() {
-        return locationProvider.getLastLocation();
+        return locationConnection.getLastLocation();
     }
 
     public LocationController get() {
@@ -50,10 +50,10 @@ public class LocationController {
     }
 
     public void start(OnLocationUpdatedListener listener) {
-        locationProvider.start(listener, params, oneFix);
+        locationConnection.start(listener, params, oneFix);
     }
 
     public void stop() {
-        locationProvider.stop();
+        locationConnection.stop();
     }
 }

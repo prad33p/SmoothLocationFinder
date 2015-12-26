@@ -23,7 +23,6 @@ public class SmoothLocationFinder {
     }
 
 
-
     /*
     * Builder to initialize SmoothLocationFetcher.
     * */
