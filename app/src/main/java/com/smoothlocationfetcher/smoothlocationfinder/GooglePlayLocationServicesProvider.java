@@ -28,11 +28,13 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
     private static final String TAG = GooglePlayLocationServicesProvider.class.getSimpleName();
     public static final int REQUEST_START_LOCATION_FIX = 10001;
     public static final int REQUEST_CHECK_SETTINGS = 20001;
+    private static final String GMS_ID = "GMS";
 
     private GoogleApiClient client;
     private OnLocationUpdatedListener listener;
     private boolean shouldStart = false;
     private boolean stopped = false;
+    private LocationStore locationStore;
     private LocationRequest locationRequest;
     private Context context;
     private final GooglePlayServicesListener googlePlayServicesListener;
@@ -52,6 +54,8 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
     @Override
     public void init(Context context) {
         this.context = context;
+
+        locationStore = new LocationStore(context);
 
         if (!shouldStart) {
             this.client = new GoogleApiClient.Builder(context)
@@ -151,6 +155,13 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
             return LocationServices.FusedLocationApi.getLastLocation(client);
         }
 
+        if (locationStore != null) {
+            Location location = locationStore.get(GMS_ID);
+            if (location != null) {
+                return location;
+            }
+        }
+
         return null;
     }
 
@@ -188,6 +199,11 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
 
         if (listener != null) {
             listener.onLocationUpdated(location);
+        }
+
+        if (locationStore != null) {
+            Log.d(TAG,"Stored in SharedPreferences");
+            locationStore.put(GMS_ID, location);
         }
     }
 

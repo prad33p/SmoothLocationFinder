@@ -54,13 +54,17 @@ public class LocationController {
         return this;
     }
 
-    public LocationController setTimeOut(int timeOut) {
+    public LocationController timeOut(int timeOut) {
         if (timeOut < 0) {
             this.timeOut = 0;
         } else {
             this.timeOut = timeOut;
         }
         return this;
+    }
+
+    public int getTimeOut() {
+        return this.timeOut;
     }
 
     @Nullable

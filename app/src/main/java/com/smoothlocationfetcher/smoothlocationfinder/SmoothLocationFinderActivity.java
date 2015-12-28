@@ -26,6 +26,11 @@ public class SmoothLocationFinderActivity extends AppCompatActivity {
                 .continuous()
                 .config(LocationParams.NAVIGATION);
 
+
+
+
+
+
         RxObservableFactory.fetchLocation(locationController)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
