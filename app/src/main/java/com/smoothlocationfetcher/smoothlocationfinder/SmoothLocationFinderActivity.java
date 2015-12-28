@@ -21,7 +21,12 @@ public class SmoothLocationFinderActivity extends AppCompatActivity {
         final TextView latitude = (TextView) findViewById(R.id.latitude);
         final TextView longitude = (TextView) findViewById(R.id.longitude);
 
-        RxObservableFactory.fetchLocation(SmoothLocationFinder.with(this).fetchLocation().continuous().config(LocationParams.NAVIGATION))
+        LocationController locationController;
+        locationController = SmoothLocationFinder.with(this).fetchLocation()
+                .continuous()
+                .config(LocationParams.NAVIGATION);
+
+        RxObservableFactory.fetchLocation(locationController)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<Location>() {

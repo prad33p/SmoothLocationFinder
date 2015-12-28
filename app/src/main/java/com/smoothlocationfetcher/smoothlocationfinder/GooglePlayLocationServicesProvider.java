@@ -19,18 +19,15 @@ import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 
-import java.util.logging.Logger;
-
 /**
  * Created by pradeep on 25/12/15.
  */
 
-public class GooglePlayServicesLocationProvider implements LocationConnection, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, ResultCallback<Status> {
+public class GooglePlayLocationServicesProvider implements LocationConnection, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, ResultCallback<Status> {
 
-    private static final String TAG = GooglePlayServicesLocationProvider.class.getSimpleName();
+    private static final String TAG = GooglePlayLocationServicesProvider.class.getSimpleName();
     public static final int REQUEST_START_LOCATION_FIX = 10001;
     public static final int REQUEST_CHECK_SETTINGS = 20001;
-    private static final String GMS_ID = "GMS";
 
     private GoogleApiClient client;
     private OnLocationUpdatedListener listener;
@@ -42,11 +39,11 @@ public class GooglePlayServicesLocationProvider implements LocationConnection, G
     private boolean checkLocationSettings;
     private boolean fulfilledCheckLocationSettings;
 
-    public GooglePlayServicesLocationProvider() {
+    public GooglePlayLocationServicesProvider() {
         this(null);
     }
 
-    public GooglePlayServicesLocationProvider(GooglePlayServicesListener playServicesListener) {
+    public GooglePlayLocationServicesProvider(GooglePlayServicesListener playServicesListener) {
         googlePlayServicesListener = playServicesListener;
         checkLocationSettings = false;
         fulfilledCheckLocationSettings = false;

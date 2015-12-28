@@ -19,7 +19,7 @@ public class SmoothLocationFinder {
     }
 
     public LocationController fetchLocation() {
-        return new LocationController(mContext,new GooglePlayServicesLocationProvider());
+        return new LocationController(mContext,new GooglePlayLocationServicesProvider());
     }
 
 
