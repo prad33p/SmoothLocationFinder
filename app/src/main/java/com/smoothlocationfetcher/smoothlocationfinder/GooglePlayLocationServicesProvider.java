@@ -19,6 +19,8 @@ import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 
+import rx.subjects.PublishSubject;
+
 /**
  * Created by pradeep on 25/12/15.
  */
@@ -40,6 +42,9 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
     private final GooglePlayServicesListener googlePlayServicesListener;
     private boolean checkLocationSettings;
     private boolean fulfilledCheckLocationSettings;
+
+    private static PublishSubject<LocationServicesStatus> locationServicesStatusPublishSubject = PublishSubject.create();
+    private static PublishSubject<Boolean> locationDialogActionPublishSubject = PublishSubject.create();
 
     public GooglePlayLocationServicesProvider() {
         this(null);
@@ -285,12 +290,14 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
             switch (status.getStatusCode()) {
                 case LocationSettingsStatusCodes.SUCCESS:
                     Log.d(TAG,"All location settings are satisfied.");
+                    locationServicesStatusPublishSubject.onNext(LocationServicesStatus.ENABLED);
                     fulfilledCheckLocationSettings = true;
                     startUpdating(locationRequest);
                     break;
                 case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
                     Log.d(TAG,"Location settings are not satisfied. Show the user a dialog to" +
                             "upgrade location settings. You should hook into the Activity onActivityResult and call this provider onActivityResult method for continuing this call flow. ");
+                    locationServicesStatusPublishSubject.onNext(LocationServicesStatus.DISABLED);
 
                     if (context instanceof Activity) {
                         try {
@@ -308,10 +315,12 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
                 case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
                     Log.d(TAG,"Location settings are inadequate, and cannot be fixed here. Dialog " +
                             "not created.");
+                    locationServicesStatusPublishSubject.onNext(LocationServicesStatus.HELPLESS);
                     stop();
                     break;
             }
         }
     };
+
 
 }

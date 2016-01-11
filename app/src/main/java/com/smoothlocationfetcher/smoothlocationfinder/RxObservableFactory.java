@@ -19,10 +19,10 @@ public class RxObservableFactory {
 
     private static final String TAG = RxObservableFactory.class.getSimpleName();
 
-    public static Observable<Location> fetchLocation(final LocationController locationController) {
+    public static Observable<Location> getLocation(final LocationController locationController) {
 
         if (locationController.getTimeOut() > 0) {
-            return fetchLocationWithTimeout(locationController);
+            return getLocationWithTimeout(locationController);
         }
 
         return Observable.create(new Observable.OnSubscribe<Location>() {
@@ -39,21 +39,28 @@ public class RxObservableFactory {
         });
     }
 
+    /*Observable to fetch current location of user but with a timeout after which
+     his last known location is returned if present*/
 
-    public static final Observable<Location> fetchLocationWithTimeout(final LocationController locationController) {
-        return RxObservableFactory.fetchLocation(locationController)
+    public static Observable<Location> getLocationWithTimeout(final LocationController locationController) {
+        return RxObservableFactory.getLocation(locationController)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .timeout(locationController.getTimeOut(), TimeUnit.SECONDS)
                 .onErrorResumeNext(new Func1<Throwable, Observable<? extends Location>>() {
                     @Override
                     public Observable<? extends Location> call(Throwable throwable) {
-                        return fetchLastLocation(locationController);
+                        return getLastLocation(locationController);
                     }
                 });
     }
 
-    private static Observable<? extends Location> fetchLastLocation(final LocationController locationController) {
+
+    /***********
+     * Observable to fetch last location of user.
+     ***************************/
+
+    public static Observable<Location> getLastLocation(final LocationController locationController) {
         return Observable.create(new Observable.OnSubscribe<Location>() {
             @Override
             public void call(Subscriber<? super Location> subscriber) {
@@ -63,5 +70,58 @@ public class RxObservableFactory {
         })
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread());
+    }
+
+    /************ Observable to get location of user after some interval regularly ***************************/
+
+    public static Observable<Location> getLocationAtInterval(final LocationController locationController, final int interval) {
+        locationController.oneFix();
+
+        return Observable.create(new Observable.OnSubscribe<Location>() {
+
+            @Override
+            public void call(final Subscriber<? super Location> subscriber) {
+                Observable.interval(interval,TimeUnit.MILLISECONDS)
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(Schedulers.io())
+                        .subscribe(new Subscriber<Long>() {
+                            @Override
+                            public void onCompleted() {
+                                Log.d(TAG,"Complete");
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+                                Log.d(TAG,"Error occured in getting location at interval.");
+                            }
+
+                            @Override
+                            public void onNext(Long aLong) {
+
+                                getLocation(locationController)
+                                        .subscribeOn(Schedulers.io())
+                                        .observeOn(Schedulers.io())
+                                        .subscribe(new Subscriber<Location>() {
+                                            @Override
+                                            public void onCompleted() {
+
+                                            }
+
+                                            @Override
+                                            public void onError(Throwable e) {
+
+                                            }
+
+                                            @Override
+                                            public void onNext(Location location) {
+                                                subscriber.onNext(location);
+                                            }
+                                        });
+
+                            }
+                        });
+            }
+        });
+
     }
 }

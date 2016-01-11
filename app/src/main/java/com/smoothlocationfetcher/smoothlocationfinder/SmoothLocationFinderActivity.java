@@ -13,6 +13,8 @@ import rx.schedulers.Schedulers;
 
 public class SmoothLocationFinderActivity extends AppCompatActivity {
 
+    private GooglePlayLocationServicesProvider googlePlayLocationServicesProvider;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -21,8 +23,10 @@ public class SmoothLocationFinderActivity extends AppCompatActivity {
         final TextView latitude = (TextView) findViewById(R.id.latitude);
         final TextView longitude = (TextView) findViewById(R.id.longitude);
 
+        googlePlayLocationServicesProvider = new GooglePlayLocationServicesProvider();
+
         LocationController locationController;
-        locationController = SmoothLocationFinder.with(this).fetchLocation()
+        locationController = SmoothLocationFinder.with(this).fetchLocation(googlePlayLocationServicesProvider)
                 .continuous()
                 .config(LocationParams.NAVIGATION);
 
@@ -30,8 +34,7 @@ public class SmoothLocationFinderActivity extends AppCompatActivity {
 
 
 
-
-        RxObservableFactory.fetchLocation(locationController)
+        RxObservableFactory.getLocation(locationController)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<Location>() {
