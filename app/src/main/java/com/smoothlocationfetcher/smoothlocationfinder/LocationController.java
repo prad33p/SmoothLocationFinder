@@ -35,7 +35,7 @@ public class LocationController {
         }
     }
 
-    public LocationController config(LocationParams params) {
+        public LocationController config(LocationParams params) {
         this.params = params;
         return this;
     }
@@ -50,6 +50,8 @@ public class LocationController {
         return this;
     }
 
+
+    //This will prompt user to enable location services if not enabled already
     public LocationController enableLocationSettings() {
         this.enableLocationSettings = true;
         return this;
