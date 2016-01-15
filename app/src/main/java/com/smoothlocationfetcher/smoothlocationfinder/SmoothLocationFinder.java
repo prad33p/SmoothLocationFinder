@@ -7,21 +7,18 @@ import android.content.Context;
  */
 public class SmoothLocationFinder {
     private Context mContext;
-    private boolean enableLocationSettings;
 
-    public SmoothLocationFinder(Context context,boolean enableLocationSettings) {
-        mContext =  context;
-        this.enableLocationSettings = enableLocationSettings;
+    public SmoothLocationFinder(Context context) {
+        mContext = context;
     }
 
     public static SmoothLocationFinder with(Context context) {
         return new Builder(context).build();
     }
 
-    public LocationController fetchLocation() {
-        return new LocationController(mContext,new GooglePlayServicesLocationProvider());
+    public LocationController fetchLocation(GooglePlayLocationServicesProvider locationServicesProvider) {
+        return new LocationController(mContext, locationServicesProvider);
     }
-
 
 
     /*
@@ -36,7 +33,7 @@ public class SmoothLocationFinder {
         }
 
         public SmoothLocationFinder build() {
-            return new SmoothLocationFinder(context,false);
+            return new SmoothLocationFinder(context);
         }
     }
 

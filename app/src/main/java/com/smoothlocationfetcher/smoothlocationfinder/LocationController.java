@@ -7,25 +7,35 @@ import android.support.annotation.Nullable;
 /**
  * Created by pradeep on 25/12/15.
  */
+
+/*
+ *LocationController class controls all the settings used while getting location such as getting lastLocation, timeOut,
+ *continuous location updates or just one time location and showLocation popup .
+ */
+
 public class LocationController {
 
     private LocationParams params;
-    private GooglePlayServicesLocationProvider locationProvider;
+    private LocationConnection locationConnection;
     private boolean oneFix;
+    private boolean enableLocationSettings;
+    private int timeOut;
+    private int interval;
 
-    public LocationController(Context context, GooglePlayServicesLocationProvider locationProvider) {
+    public LocationController(Context context, LocationConnection locationConnection) {
         params = LocationParams.BEST_EFFORT;
         oneFix = false;
-        this.locationProvider = locationProvider;
+        timeOut = 0;
+        this.locationConnection = locationConnection;
 
-        if (locationProvider == null) {
+        if (locationConnection == null) {
             throw new RuntimeException("A provider must be initialized");
         } else {
-            locationProvider.init(context);
+            locationConnection.init(context);
         }
     }
 
-    public LocationController config(LocationParams params) {
+        public LocationController config(LocationParams params) {
         this.params = params;
         return this;
     }
@@ -40,9 +50,43 @@ public class LocationController {
         return this;
     }
 
+
+    //This will prompt user to enable location services if not enabled already
+    public LocationController enableLocationSettings() {
+        this.enableLocationSettings = true;
+        return this;
+    }
+
+    public LocationController timeOut(int timeOut) {
+        if (timeOut < 0) {
+            this.timeOut = 0;
+        } else {
+            this.timeOut = timeOut;
+        }
+        return this;
+    }
+
+    public LocationController setInterval(int interval) {
+        if(interval<0) {
+            this.interval = 0;
+        } else {
+            this.interval = interval;
+        }
+
+        return this;
+    }
+
+    public int getInterval() {
+        return this.interval;
+    }
+
+    public int getTimeOut() {
+        return this.timeOut;
+    }
+
     @Nullable
     public Location getLastLocation() {
-        return locationProvider.getLastLocation();
+        return locationConnection.getLastLocation();
     }
 
     public LocationController get() {
@@ -50,10 +94,10 @@ public class LocationController {
     }
 
     public void start(OnLocationUpdatedListener listener) {
-        locationProvider.start(listener, params, oneFix);
+        locationConnection.start(listener, params, oneFix);
     }
 
     public void stop() {
-        locationProvider.stop();
+        locationConnection.stop();
     }
 }

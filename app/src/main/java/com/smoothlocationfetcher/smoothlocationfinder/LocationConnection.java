@@ -15,4 +15,5 @@ public interface LocationConnection {
     public void stop();
 
     public Location getLastLocation();
+
 }

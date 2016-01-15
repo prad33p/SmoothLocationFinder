@@ -19,15 +19,15 @@ import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 
-import java.util.logging.Logger;
+import rx.subjects.PublishSubject;
 
 /**
  * Created by pradeep on 25/12/15.
  */
 
-public class GooglePlayServicesLocationProvider implements LocationConnection, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, ResultCallback<Status> {
+public class GooglePlayLocationServicesProvider implements LocationConnection, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, ResultCallback<Status> {
 
-    private static final String TAG = GooglePlayServicesLocationProvider.class.getSimpleName();
+    private static final String TAG = GooglePlayLocationServicesProvider.class.getSimpleName();
     public static final int REQUEST_START_LOCATION_FIX = 10001;
     public static final int REQUEST_CHECK_SETTINGS = 20001;
     private static final String GMS_ID = "GMS";
@@ -36,17 +36,21 @@ public class GooglePlayServicesLocationProvider implements LocationConnection, G
     private OnLocationUpdatedListener listener;
     private boolean shouldStart = false;
     private boolean stopped = false;
+    private LocationStore locationStore;
     private LocationRequest locationRequest;
     private Context context;
     private final GooglePlayServicesListener googlePlayServicesListener;
     private boolean checkLocationSettings;
     private boolean fulfilledCheckLocationSettings;
 
-    public GooglePlayServicesLocationProvider() {
+    private static PublishSubject<LocationServicesStatus> locationServicesStatusPublishSubject = PublishSubject.create();
+    private static PublishSubject<Boolean> locationDialogActionPublishSubject = PublishSubject.create();
+
+    public GooglePlayLocationServicesProvider() {
         this(null);
     }
 
-    public GooglePlayServicesLocationProvider(GooglePlayServicesListener playServicesListener) {
+    public GooglePlayLocationServicesProvider(GooglePlayServicesListener playServicesListener) {
         googlePlayServicesListener = playServicesListener;
         checkLocationSettings = false;
         fulfilledCheckLocationSettings = false;
@@ -55,6 +59,8 @@ public class GooglePlayServicesLocationProvider implements LocationConnection, G
     @Override
     public void init(Context context) {
         this.context = context;
+
+        locationStore = new LocationStore(context);
 
         if (!shouldStart) {
             this.client = new GoogleApiClient.Builder(context)
@@ -154,6 +160,13 @@ public class GooglePlayServicesLocationProvider implements LocationConnection, G
             return LocationServices.FusedLocationApi.getLastLocation(client);
         }
 
+        if (locationStore != null) {
+            Location location = locationStore.get(GMS_ID);
+            if (location != null) {
+                return location;
+            }
+        }
+
         return null;
     }
 
@@ -191,6 +204,11 @@ public class GooglePlayServicesLocationProvider implements LocationConnection, G
 
         if (listener != null) {
             listener.onLocationUpdated(location);
+        }
+
+        if (locationStore != null) {
+            Log.d(TAG,"Stored in SharedPreferences");
+            locationStore.put(GMS_ID, location);
         }
     }
 
@@ -272,12 +290,14 @@ public class GooglePlayServicesLocationProvider implements LocationConnection, G
             switch (status.getStatusCode()) {
                 case LocationSettingsStatusCodes.SUCCESS:
                     Log.d(TAG,"All location settings are satisfied.");
+                    locationServicesStatusPublishSubject.onNext(LocationServicesStatus.ENABLED);
                     fulfilledCheckLocationSettings = true;
                     startUpdating(locationRequest);
                     break;
                 case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
                     Log.d(TAG,"Location settings are not satisfied. Show the user a dialog to" +
                             "upgrade location settings. You should hook into the Activity onActivityResult and call this provider onActivityResult method for continuing this call flow. ");
+                    locationServicesStatusPublishSubject.onNext(LocationServicesStatus.DISABLED);
 
                     if (context instanceof Activity) {
                         try {
@@ -295,10 +315,12 @@ public class GooglePlayServicesLocationProvider implements LocationConnection, G
                 case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
                     Log.d(TAG,"Location settings are inadequate, and cannot be fixed here. Dialog " +
                             "not created.");
+                    locationServicesStatusPublishSubject.onNext(LocationServicesStatus.HELPLESS);
                     stop();
                     break;
             }
         }
     };
+
 
 }
