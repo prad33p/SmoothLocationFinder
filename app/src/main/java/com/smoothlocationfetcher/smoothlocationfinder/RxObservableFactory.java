@@ -10,6 +10,7 @@ import rx.Subscriber;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
+import rx.subjects.PublishSubject;
 
 
 /**
@@ -31,7 +32,6 @@ public class RxObservableFactory {
                 locationController.start(new OnLocationUpdatedListener() {
                     @Override
                     public void onLocationUpdated(Location location) {
-                        Log.d(TAG, "Location updated: " + location.toString());
                         subscriber.onNext(location);
                     }
                 });
@@ -56,9 +56,9 @@ public class RxObservableFactory {
     }
 
 
-    /***********
+    /*
      * Observable to fetch last location of user.
-     ***************************/
+     */
 
     public static Observable<Location> getLastLocation(final LocationController locationController) {
         return Observable.create(new Observable.OnSubscribe<Location>() {
@@ -72,56 +72,63 @@ public class RxObservableFactory {
                 .observeOn(AndroidSchedulers.mainThread());
     }
 
-    /************ Observable to get location of user after some interval regularly ***************************/
+    public static Observable<Location> getLocationAfterInterval(final LocationController locationController, final int interval) {
+        final PublishSubject<Location> pollingSubject = PublishSubject.create();
 
-    public static Observable<Location> getLocationAtInterval(final LocationController locationController, final int interval) {
         locationController.oneFix();
+        locationController.timeOut(0);
 
-        return Observable.create(new Observable.OnSubscribe<Location>() {
-
+        Observable<Location> locationObservable = Observable.create(new Observable.OnSubscribe<Location>() {
             @Override
             public void call(final Subscriber<? super Location> subscriber) {
-                Observable.interval(interval,TimeUnit.MILLISECONDS)
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(Schedulers.io())
-                        .subscribe(new Subscriber<Long>() {
-                            @Override
-                            public void onCompleted() {
-                                Log.d(TAG,"Complete");
-                            }
+                pollingSubject.subscribe(new Subscriber<Location>() {
+                    @Override
+                    public void onCompleted() {
 
-                            @Override
-                            public void onError(Throwable e) {
-                                Log.d(TAG,"Error occured in getting location at interval.");
-                            }
+                    }
 
-                            @Override
-                            public void onNext(Long aLong) {
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.d(TAG, "Error while polling" + e.toString());
+                    }
 
-                                getLocation(locationController)
-                                        .subscribeOn(Schedulers.io())
-                                        .observeOn(Schedulers.io())
-                                        .subscribe(new Subscriber<Location>() {
-                                            @Override
-                                            public void onCompleted() {
-
-                                            }
-
-                                            @Override
-                                            public void onError(Throwable e) {
-
-                                            }
-
-                                            @Override
-                                            public void onNext(Location location) {
-                                                subscriber.onNext(location);
-                                            }
-                                        });
-
-                            }
-                        });
+                    @Override
+                    public void onNext(Location location) {
+                        subscriber.onNext(location);
+                        pollingLocation(locationController, pollingSubject, interval);
+                    }
+                });
             }
         });
 
+        pollingLocation(locationController, pollingSubject, 0);
+
+        return locationObservable;
     }
+
+
+    private static void pollingLocation(LocationController locationController, final PublishSubject<Location> pollingSubject, int interval) {
+
+        getLocation(locationController)
+                .delay(interval, TimeUnit.MILLISECONDS)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Subscriber<Location>() {
+                    @Override
+                    public void onCompleted() {
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.d(TAG, "Error in Polling : " + e.toString());
+                    }
+
+                    @Override
+                    public void onNext(Location location) {
+                        pollingSubject.onNext(location);
+                    }
+                });
+    }
+
 }
