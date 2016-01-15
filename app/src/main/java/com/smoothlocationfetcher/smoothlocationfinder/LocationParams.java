@@ -53,6 +53,11 @@ public class LocationParams {
         return result;
     }
 
+    /*
+     * For creating a custom Location Params if any other requirement is there which cannot be
+      * fulfilled using NAVIGATION,BEST-EFFORT and LAZYMODE
+     */
+
     public static class Builder {
         private LocationAccuracy accuracy;
         private long interval;
