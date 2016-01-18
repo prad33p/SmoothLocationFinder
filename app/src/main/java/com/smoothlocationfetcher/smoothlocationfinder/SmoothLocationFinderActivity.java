@@ -30,12 +30,23 @@ public class SmoothLocationFinderActivity extends AppCompatActivity {
 
         Log.d(TAG, googlePlayLocationServicesProvider.toString());
 
+        /*
+        TODO
+        Test combination of different scenarios like enable location services dialog with interval settings or
+        interval with timeOut or enablelocation services dialog with a timeout.
+         */
+
+
+        /*
+         *  Uncomment line .enableSettings() if u want to enable location services dialog.
+         */
+
         locationController = SmoothLocationFinder.with(this).fetchLocation(googlePlayLocationServicesProvider)
                 .continuous()
 //                .enableLocationSettings()
                 .config(LocationParams.NAVIGATION);
 
-        /*RxObservableFactory.getLocation(locationController)
+        RxObservableFactory.getLocation(locationController)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<Location>() {
@@ -56,10 +67,11 @@ public class SmoothLocationFinderActivity extends AppCompatActivity {
                         longitude.setText(Double.toString(location.getLongitude()));
                         Log.d(TAG, "Location updated.");
                     }
-                });*/
+                });
 
 
-        //Pass the interval in milliseconds.
+       /*
+       //Pass the interval in milliseconds.
         RxObservableFactory.getLocationAfterInterval(locationController, 20000)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -81,7 +93,7 @@ public class SmoothLocationFinderActivity extends AppCompatActivity {
                         longitude.setText(Double.toString(location.getLongitude()));
                         Log.d(TAG, "Location updated." + location.toString());
                     }
-                });
+                });*/
     }
 
 
