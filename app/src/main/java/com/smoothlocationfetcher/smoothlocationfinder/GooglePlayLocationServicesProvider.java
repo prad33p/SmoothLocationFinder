@@ -43,8 +43,8 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
     private boolean checkLocationSettings;
     private boolean fulfilledCheckLocationSettings;
 
-    private static PublishSubject<LocationServicesStatus> locationServicesStatusPublishSubject = PublishSubject.create();
-    private static PublishSubject<Boolean> locationDialogActionPublishSubject = PublishSubject.create();
+    private PublishSubject<LocationServicesStatus> locationServicesStatusPublishSubject = PublishSubject.create();
+    private PublishSubject<Boolean> locationDialogActionPublishSubject = PublishSubject.create();
 
     public GooglePlayLocationServicesProvider() {
         this(null);
@@ -71,11 +71,13 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
 
             client.connect();
         } else {
-            Log.d(TAG,"already started");
+            Log.d(TAG, "already started");
         }
     }
 
     private LocationRequest createRequest(LocationParams params, boolean singleUpdate) {
+        Log.d(TAG,"location request params getting initalized." + params.getInterval());
+
         LocationRequest request = LocationRequest.create()
                 .setFastestInterval(params.getInterval())
                 .setInterval(params.getInterval())
@@ -107,7 +109,7 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
     public void start(OnLocationUpdatedListener listener, LocationParams params, boolean singleUpdate) {
         this.listener = listener;
         if (listener == null) {
-            Log.d(TAG,"Listener is null, you sure about this?");
+            Log.d(TAG, "Listener is null, you sure about this?");
         }
         locationRequest = createRequest(params, singleUpdate);
 
@@ -119,32 +121,44 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
             stopped = false;
         } else {
             shouldStart = true;
-            Log.d(TAG,"still not connected - scheduled start when connection is ok");
+            Log.d(TAG, "still not connected - scheduled start when connection is ok");
         }
     }
 
     private void startUpdating(LocationRequest request) {
         // TODO wait until the connection is done and retry
         if (checkLocationSettings && !fulfilledCheckLocationSettings) {
-            Log.d(TAG,"startUpdating wont be executed for now, as we have to test the location settings before");
+            Log.d(TAG, "startUpdating wont be executed for now, as we have to test the location settings before");
             checkLocationSettings();
             return;
         }
         if (client.isConnected()) {
             LocationServices.FusedLocationApi.requestLocationUpdates(client, request, this).setResultCallback(this);
         } else {
-            Log.d(TAG,"startUpdating executed without the GoogleApiClient being connected!!");
+            Log.d(TAG, "startUpdating executed without the GoogleApiClient being connected!!");
         }
     }
 
     private void checkLocationSettings() {
-        LocationSettingsRequest request = new LocationSettingsRequest.Builder().addLocationRequest(locationRequest).build();
+        Log.d(TAG, "Check Location Settings method");
+
+        if (locationRequest == null) {
+            Log.d(TAG, "Location request is null");
+
+            locationRequest = LocationRequest.create()
+                    .setFastestInterval(500)
+                    .setInterval(500)
+                    .setSmallestDisplacement(0)
+                    .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+        }
+
+        LocationSettingsRequest request = new LocationSettingsRequest.Builder().addLocationRequest(locationRequest).setAlwaysShow(true).build();
         LocationServices.SettingsApi.checkLocationSettings(client, request).setResultCallback(settingsResultCallback);
     }
 
     @Override
     public void stop() {
-        Log.d(TAG,"stop");
+        Log.d(TAG, "stop");
         if (client.isConnected()) {
             LocationServices.FusedLocationApi.removeLocationUpdates(client, this);
             client.disconnect();
@@ -171,8 +185,20 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
     }
 
     @Override
+    public GooglePlayLocationServicesProvider getGooglePlayLocationServicesProvider() {
+        Log.d(TAG, this.toString());
+        return this;
+    }
+
+    @Override
     public void onConnected(Bundle bundle) {
-        Log.d(TAG,"onConnected");
+        Log.d(TAG, "onConnected");
+
+        if (checkLocationSettings && !fulfilledCheckLocationSettings) {
+            Log.d(TAG, "startUpdating wont be executed for now, as we have to test the location settings before");
+            checkLocationSettings();
+        }
+
         if (shouldStart) {
             startUpdating(locationRequest);
         }
@@ -184,7 +210,7 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
 
     @Override
     public void onConnectionSuspended(int i) {
-        Log.d(TAG,"onConnectionSuspended " + i);
+        Log.d(TAG, "onConnectionSuspended " + i);
         if (googlePlayServicesListener != null) {
             googlePlayServicesListener.onConnectionSuspended(i);
         }
@@ -192,7 +218,7 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
-        Log.d(TAG,"onConnectionFailed " + connectionResult.toString());
+        Log.d(TAG, "onConnectionFailed " + connectionResult.toString());
         if (googlePlayServicesListener != null) {
             googlePlayServicesListener.onConnectionFailed(connectionResult);
         }
@@ -200,14 +226,14 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
 
     @Override
     public void onLocationChanged(Location location) {
-        Log.d(TAG,"onLocationChanged" + location.toString());
+        Log.d(TAG, "onLocationChanged" + location.toString());
 
         if (listener != null) {
             listener.onLocationUpdated(location);
         }
 
         if (locationStore != null) {
-            Log.d(TAG,"Stored in SharedPreferences");
+            Log.d(TAG, "Stored in SharedPreferences");
             locationStore.put(GMS_ID, location);
         }
     }
@@ -215,7 +241,7 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
     @Override
     public void onResult(Status status) {
         if (status.isSuccess()) {
-            Log.d(TAG,"Locations update request successful");
+            Log.d(TAG, "Locations update request successful");
 
         } else if (status.hasResolution() && context instanceof Activity) {
             Log.d(TAG,
@@ -223,11 +249,11 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
             try {
                 status.startResolutionForResult((Activity) context, REQUEST_START_LOCATION_FIX);
             } catch (IntentSender.SendIntentException e) {
-                Log.d(TAG,"problem with startResolutionForResult" + e.toString());
+                Log.d(TAG, "problem with startResolutionForResult" + e.toString());
             }
         } else {
             // No recovery. Weep softly or inform the user.
-            Log.d(TAG,"Registering failed: " + status.getStatusMessage());
+            Log.d(TAG, "Registering failed: " + status.getStatusMessage());
         }
     }
 
@@ -248,6 +274,23 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
         this.checkLocationSettings = allowingLocationSettings;
     }
 
+    public PublishSubject<Boolean> getLocationDialogActionPublishSubject() {
+        return locationDialogActionPublishSubject;
+    }
+
+    public PublishSubject<LocationServicesStatus> getLocationServicesStatusPublishSubject() {
+        checkLocationSettings = true;
+        if (client.isConnected()) {
+            checkLocationSettings();
+            Log.d(TAG, "Client is connected");
+        } else {
+            Log.d(TAG, "Client is not connected");
+            client.connect();
+        }
+
+        return locationServicesStatusPublishSubject;
+    }
+
     /**
      * This method should be called in the onActivityResult of the calling activity whenever we are
      * trying to implement the Check Location Settings fix dialog.
@@ -260,23 +303,27 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
         if (requestCode == REQUEST_CHECK_SETTINGS) {
             switch (resultCode) {
                 case Activity.RESULT_OK:
-                    Log.d(TAG,"User agreed to make required location settings changes.");
+                    Log.d(TAG, "User agreed to make required location settings changes.");
                     fulfilledCheckLocationSettings = true;
+                    locationDialogActionPublishSubject.onNext(true);
                     startUpdating(locationRequest);
                     break;
                 case Activity.RESULT_CANCELED:
-                    Log.d(TAG,"User chose not to make required location settings changes.");
+                    Log.d(TAG, "User chose not to make required location settings changes.");
+                    locationDialogActionPublishSubject.onNext(false);
                     stop();
                     break;
             }
         } else if (requestCode == REQUEST_START_LOCATION_FIX) {
             switch (resultCode) {
                 case Activity.RESULT_OK:
-                    Log.d(TAG,"User fixed the problem.");
+                    Log.d(TAG, "User fixed the problem.");
+                    locationDialogActionPublishSubject.onNext(true);
                     startUpdating(locationRequest);
                     break;
                 case Activity.RESULT_CANCELED:
-                    Log.d(TAG,"User chose not to fix the problem.");
+                    Log.d(TAG, "User chose not to fix the problem.");
+                    locationDialogActionPublishSubject.onNext(false);
                     stop();
                     break;
             }
@@ -289,31 +336,31 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
             final Status status = locationSettingsResult.getStatus();
             switch (status.getStatusCode()) {
                 case LocationSettingsStatusCodes.SUCCESS:
-                    Log.d(TAG,"All location settings are satisfied.");
+                    Log.d(TAG, "All location settings are satisfied.");
                     locationServicesStatusPublishSubject.onNext(LocationServicesStatus.ENABLED);
                     fulfilledCheckLocationSettings = true;
                     startUpdating(locationRequest);
                     break;
                 case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-                    Log.d(TAG,"Location settings are not satisfied. Show the user a dialog to" +
+                    Log.d(TAG, "Location settings are not satisfied. Show the user a dialog to" +
                             "upgrade location settings. You should hook into the Activity onActivityResult and call this provider onActivityResult method for continuing this call flow. ");
-                    locationServicesStatusPublishSubject.onNext(LocationServicesStatus.DISABLED);
 
                     if (context instanceof Activity) {
                         try {
                             // Show the dialog by calling startResolutionForResult(), and check the result
                             // in onActivityResult().
+                            locationServicesStatusPublishSubject.onNext(LocationServicesStatus.DISABLED);
                             status.startResolutionForResult((Activity) context, REQUEST_CHECK_SETTINGS);
                         } catch (IntentSender.SendIntentException e) {
-                            Log.d(TAG,"PendingIntent unable to execute request.");
+                            Log.d(TAG, "PendingIntent unable to execute request.");
                         }
 
                     } else {
-                        Log.d(TAG,"Provided context is not the context of an activity, therefore we cant launch the resolution activity.");
+                        Log.d(TAG, "Provided context is not the context of an activity, therefore we cant launch the resolution activity.");
                     }
                     break;
                 case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
-                    Log.d(TAG,"Location settings are inadequate, and cannot be fixed here. Dialog " +
+                    Log.d(TAG, "Location settings are inadequate, and cannot be fixed here. Dialog " +
                             "not created.");
                     locationServicesStatusPublishSubject.onNext(LocationServicesStatus.HELPLESS);
                     stop();
@@ -321,6 +368,5 @@ public class GooglePlayLocationServicesProvider implements LocationConnection, G
             }
         }
     };
-
 
 }

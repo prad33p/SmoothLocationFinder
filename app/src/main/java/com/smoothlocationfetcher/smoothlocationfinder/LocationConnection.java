@@ -16,4 +16,6 @@ public interface LocationConnection {
 
     public Location getLastLocation();
 
+    public GooglePlayLocationServicesProvider getGooglePlayLocationServicesProvider();
+
 }
