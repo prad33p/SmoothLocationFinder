@@ -1,5 +1,6 @@
 package com.smoothlocationfetcher.smoothlocationfinder;
 
+import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -15,6 +16,7 @@ import rx.schedulers.Schedulers;
 public class SmoothLocationFinderActivity extends AppCompatActivity {
     private static final String TAG = SmoothLocationFinderActivity.class.getSimpleName();
     private GooglePlayLocationServicesProvider googlePlayLocationServicesProvider;
+    private LocationController locationController;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,10 +28,11 @@ public class SmoothLocationFinderActivity extends AppCompatActivity {
 
         googlePlayLocationServicesProvider = new GooglePlayLocationServicesProvider();
 
-        LocationController locationController;
+        Log.d(TAG, googlePlayLocationServicesProvider.toString());
+
         locationController = SmoothLocationFinder.with(this).fetchLocation(googlePlayLocationServicesProvider)
                 .continuous()
-                .enableLocationSettings()
+//                .enableLocationSettings()
                 .config(LocationParams.NAVIGATION);
 
         /*RxObservableFactory.getLocation(locationController)
@@ -38,13 +41,12 @@ public class SmoothLocationFinderActivity extends AppCompatActivity {
                 .subscribe(new Subscriber<Location>() {
                     @Override
                     public void onCompleted() {
-                        Log.d(TAG,"onCompleted");
-
+                        Log.d(TAG, "onCompleted");
                     }
 
                     @Override
                     public void onError(Throwable e) {
-                        Log.d(TAG,e.toString());
+                        Log.d(TAG, e.toString());
 
                     }
 
@@ -52,13 +54,13 @@ public class SmoothLocationFinderActivity extends AppCompatActivity {
                     public void onNext(Location location) {
                         latitude.setText(Double.toString(location.getLatitude()));
                         longitude.setText(Double.toString(location.getLongitude()));
-                        Log.d(TAG,"Location updated.");
+                        Log.d(TAG, "Location updated.");
                     }
                 });*/
 
 
         //Pass the interval in milliseconds.
-        RxObservableFactory.getLocationAfterInterval(locationController, 10000)
+        RxObservableFactory.getLocationAfterInterval(locationController, 20000)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<Location>() {
@@ -80,5 +82,11 @@ public class SmoothLocationFinderActivity extends AppCompatActivity {
                         Log.d(TAG, "Location updated." + location.toString());
                     }
                 });
+    }
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        locationController.getGooglePlayLocationServicesProvider().onActivityResult(requestCode, resultCode, data);
     }
 }

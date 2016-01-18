@@ -18,6 +18,7 @@ public class LocationController {
     private LocationParams params;
     private LocationConnection locationConnection;
     private boolean oneFix;
+
     private boolean enableLocationSettings;
     private int timeOut;
     private int interval;
@@ -57,6 +58,10 @@ public class LocationController {
         return this;
     }
 
+    public boolean isEnableLocationSettings() {
+        return enableLocationSettings;
+    }
+
     public LocationController timeOut(int timeOut) {
         if (timeOut < 0) {
             this.timeOut = 0;
@@ -64,20 +69,6 @@ public class LocationController {
             this.timeOut = timeOut;
         }
         return this;
-    }
-
-    public LocationController setInterval(int interval) {
-        if(interval<0) {
-            this.interval = 0;
-        } else {
-            this.interval = interval;
-        }
-
-        return this;
-    }
-
-    public int getInterval() {
-        return this.interval;
     }
 
     public int getTimeOut() {
@@ -99,5 +90,9 @@ public class LocationController {
 
     public void stop() {
         locationConnection.stop();
+    }
+
+    public GooglePlayLocationServicesProvider getGooglePlayLocationServicesProvider() {
+        return locationConnection.getGooglePlayLocationServicesProvider();
     }
 }
