@@ -1,5 +1,6 @@
 package com.smoothlocationfetcher.smoothlocationfinder;
 
+import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -15,6 +16,7 @@ import rx.schedulers.Schedulers;
 public class SmoothLocationFinderActivity extends AppCompatActivity {
     private static final String TAG = SmoothLocationFinderActivity.class.getSimpleName();
     private GooglePlayLocationServicesProvider googlePlayLocationServicesProvider;
+    private LocationController locationController;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,25 +28,36 @@ public class SmoothLocationFinderActivity extends AppCompatActivity {
 
         googlePlayLocationServicesProvider = new GooglePlayLocationServicesProvider();
 
-        LocationController locationController;
+        Log.d(TAG, googlePlayLocationServicesProvider.toString());
+
+        /*
+        TODO
+        Test combination of different scenarios like enable location services dialog with interval settings or
+        interval with timeOut or enablelocation services dialog with a timeout.
+         */
+
+
+        /*
+         *  Uncomment line .enableSettings() if u want to enable location services dialog.
+         */
+
         locationController = SmoothLocationFinder.with(this).fetchLocation(googlePlayLocationServicesProvider)
                 .continuous()
-                .enableLocationSettings()
+//                .enableLocationSettings()
                 .config(LocationParams.NAVIGATION);
 
-        /*RxObservableFactory.getLocation(locationController)
+        RxObservableFactory.getLocation(locationController)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<Location>() {
                     @Override
                     public void onCompleted() {
-                        Log.d(TAG,"onCompleted");
-
+                        Log.d(TAG, "onCompleted");
                     }
 
                     @Override
                     public void onError(Throwable e) {
-                        Log.d(TAG,e.toString());
+                        Log.d(TAG, e.toString());
 
                     }
 
@@ -52,13 +65,14 @@ public class SmoothLocationFinderActivity extends AppCompatActivity {
                     public void onNext(Location location) {
                         latitude.setText(Double.toString(location.getLatitude()));
                         longitude.setText(Double.toString(location.getLongitude()));
-                        Log.d(TAG,"Location updated.");
+                        Log.d(TAG, "Location updated.");
                     }
-                });*/
+                });
 
 
-        //Pass the interval in milliseconds.
-        RxObservableFactory.getLocationAfterInterval(locationController, 10000)
+       /*
+       //Pass the interval in milliseconds.
+        RxObservableFactory.getLocationAfterInterval(locationController, 20000)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<Location>() {
@@ -79,6 +93,12 @@ public class SmoothLocationFinderActivity extends AppCompatActivity {
                         longitude.setText(Double.toString(location.getLongitude()));
                         Log.d(TAG, "Location updated." + location.toString());
                     }
-                });
+                });*/
+    }
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        locationController.getGooglePlayLocationServicesProvider().onActivityResult(requestCode, resultCode, data);
     }
 }
